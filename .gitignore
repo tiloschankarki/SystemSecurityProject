@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Streamlit cache
+.streamlit/
+
+# OS / editor files
+.DS_Store
+.vscode/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large datasets (cannot push to GitHub)
+data/intermediate/*
+data/processed/*
+
+# But keep the folder structure
+!data/intermediate/.gitkeep
+!data/processed/.gitkeep
+
+# Model files (very large)
+saved_models/*.pkl
+saved_models/*.joblib
+
+# Logs
+*.log
+
+# Final combined dataset (too large)
+final_dataset.csv
