@@ -81,8 +81,8 @@ pip install -r requirements.txt
 
 Because raw CTU data is several GB, we provide **processed intermediate CSVs** via Google Drive:
 
- *Google Drive Link Here*
-
+[ *Google Drive Link Here*
+](https://drive.google.com/drive/folders/13nRwMj72RYCs6UVtA6GMdFJh4FTpc8Tv?usp=drive_link)
 Download them into:
 
 ```
@@ -228,17 +228,6 @@ This is closer to real-world IDS deployment.
 | Random Forest (tuned)    | Best     | Best        | Best   | Recommended model            |
 
 ---
-
-## **👥 Team Responsibilities**
-
-* Preprocessing: You
-* Model training: You
-* Dashboard: You
-* Documentation: You
-  (Modify this based on your team.)
-
----
-
 ## **Notes**
 
 * Raw CTU logs are **NOT** included (size limitations)
@@ -247,11 +236,3 @@ This is closer to real-world IDS deployment.
 
 ---
 
-If you want, I can also:
-
-✔ convert this README into a PDF
-✔ add badges (Python version, Streamlit, License, etc.)
-✔ add screenshots of dashboards or ROC curves
-✔ add equations for metrics
-
-Just tell me **“add visuals”** or **“PDF version”**.
