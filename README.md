@@ -32,7 +32,6 @@ SystemSecurityProject/
 │   ├── intermediate/       # Cleaned scenario CSVs used for training
 │   └── processed/          # Scenario train/test splits (ignored in Git)
 │
-├── notebooks/              # Jupyter notebooks (EDA, debugging)
 ├── reports/
 │   └── roc_curves/         # ROC curve PNGs
 │
@@ -218,14 +217,14 @@ This is closer to real-world IDS deployment.
 
 ---
 
-## **Summary of Findings**
+## Summary of Findings
 
-| Model                    | Accuracy | Precision   | Recall | Notes                        |
-| ------------------------ | -------- | ----------- | ------ | ---------------------------- |
-| Decision Tree (baseline) | ~0.90    | Good        | Good   | Lightweight but unstable     |
-| Decision Tree (tuned)    | ~0.90    | Same        | Same   | Depth limited—no improvement |
-| Random Forest (baseline) | Higher   | More robust | Better | Handles variance better      |
-| Random Forest (tuned)    | Best     | Best        | Best   | Recommended model            |
+| Model                     | Accuracy | Precision | Recall | Notes                                      |
+|--------------------------|----------|-----------|--------|--------------------------------------------|
+| Decision Tree (baseline) | ~0.90    | Good      | Good   | Strong generalization; lightweight         |
+| Decision Tree (tuned)    | ~0.90    | Same      | Same   | Tuning rediscovered the same structure     |
+| Random Forest (baseline) | ~0.42    | Moderate  | Poor   | Overfits training scenarios; weak generalization |
+| Random Forest (tuned)    | ~0.42    | Moderate  | Poor   | No improvement; scenario drift dominates   |
 
 ---
 
