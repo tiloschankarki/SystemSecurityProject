@@ -5,6 +5,7 @@ import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 import streamlit as st
+import plotly.express as px
 
 from sklearn.metrics import (
     accuracy_score,
@@ -55,13 +56,16 @@ NUM_COLS = [c for c in X_test.columns if c not in CAT_COLS]
 
 def compute_metrics(model, X, y, threshold=0.5):
     """Compute classification metrics with adjustable threshold."""
+    
+    X_for_model = X.drop(columns=["ts"], errors="ignore") 
+
     # Get probabilities if supported
     if hasattr(model, "predict_proba"):
-        probs = model.predict_proba(X)[:, 1]  # P(Malicious)
+        probs = model.predict_proba(X_for_model)[:, 1]
         preds = np.where(probs >= threshold, "Malicious", "Benign")
     else:
         probs = None
-        preds = model.predict(X)
+        preds = model.predict(X_for_model)
 
     acc = accuracy_score(y, preds)
     prec, rec, f1, _ = precision_recall_fscore_support(
@@ -163,8 +167,8 @@ This dashboard visualizes the **scenario-based models** trained on the IoT-23 da
 """
 )
 
-tab_overview, tab_model, tab_threshold, tab_importance, tab_upload = st.tabs(
-    ["🔎 Overview", "📊 Model Details", "🎚 Threshold Analysis", "🧬 Feature Importance", "📁 Upload & Test"]
+tab_overview, tab_model, tab_threshold, tab_importance, tab_trends, tab_upload = st.tabs(
+    ["🔎 Overview", "📊 Model Details", "🎚 Threshold Analysis", "🧬 Feature Importance", "📈 Forensics & Trends", "📁 Upload & Test"]
 )
 
 # TAB 1 — OVERVIEW: Multi-model comparison
@@ -282,14 +286,138 @@ with tab_importance:
     model_name = st.selectbox("Choose model", list(MODELS.keys()), key="importance_model")
     model = MODELS[model_name]
 
+    feature_names = list(X_test.drop(columns=["ts"], errors="ignore").columns)
+
     fig_imp = plot_feature_importance(model, list(X_test.columns), top_k=15)
     if fig_imp is None:
         st.info("This model does not expose feature_importances_.")
     else:
         st.pyplot(fig_imp)
 
+# TAB 5 — FORENSICS & TRENDS
 
-# TAB 5 — UPLOAD & PREDICT
+with tab_trends:
+    st.subheader("📈 Security Forensics & Trend Analysis")
+
+    # 1. Get predictions from the selected model (default to first model)
+    model_name = st.selectbox("Select Model for Analysis", list(MODELS.keys()), key="trend_model")
+    model = MODELS[model_name]
+    
+    # Create a working copy of the test set
+    analysis_df = X_test.copy()
+    
+    # 2. Decode Categorical Features to get 'tcp', 'udp' back for charts
+    if "proto" in analysis_df.columns:
+        # Inverse transform expects all cat_cols in the same order
+        # We create a temporary slice for just the categorical columns
+        cat_data = analysis_df[CAT_COLS].values
+        decoded_cats = ORD_ENCODER.inverse_transform(cat_data)
+        
+        # Update the dataframe with readable strings
+        for i, col in enumerate(CAT_COLS):
+            analysis_df[col] = decoded_cats[:, i]
+
+    # 3. Add Predictions and Truth
+    preds = model.predict(X_test.drop(columns=["ts"], errors="ignore"))
+    analysis_df["Predicted Label"] = preds
+    analysis_df["True Label"] = y_test.values
+    
+    analysis_df["timestamp"] = pd.to_datetime(analysis_df["ts"], unit='s')
+
+    # FEATURE 1: TREND ANALYSIS
+    st.markdown("### Detected Threats Over Time")
+    
+    # Resample data to count threats per minute/hour
+    # We filter only for Predicted Malicious
+    malicious_df = analysis_df[analysis_df["Predicted Label"] == "Malicious"].copy()
+    
+    if not malicious_df.empty:
+        malicious_df.set_index("timestamp", inplace=True)
+        # Resample count by minute ('T') or Hour ('H')
+        trend_data = malicious_df.resample('1h').size().reset_index(name='Detected Threats')
+        
+        fig_trend = px.line(
+            trend_data, 
+            x="timestamp", 
+            y="Detected Threats", 
+            title="Hourly Malicious Activity Trend",
+            markers=True
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+    else:
+        st.info("No malicious threats detected to plot.")
+
+    # FEATURE 2: PROTOCOL DISTRIBUTION
+    st.markdown("### Protocol Distribution")
+    
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown("**Traffic by Protocol**")
+        # Count frequency of each protocol
+        proto_counts = analysis_df["proto"].value_counts().reset_index()
+        proto_counts.columns = ["Protocol", "Count"]
+        
+        fig_pie = px.pie(
+            proto_counts, 
+            values="Count", 
+            names="Protocol", 
+            hole=0.4,
+            title="Overall Traffic Protocol Breakdown"
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+    with c2:
+        st.markdown("**Malicious Only: Protocol Breakdown**")
+        if not malicious_df.empty:
+            # We already have malicious_df from the trend section, reset index to get proto back
+            mal_proto_counts = malicious_df.reset_index()["proto"].value_counts().reset_index()
+            mal_proto_counts.columns = ["Protocol", "Count"]
+            
+            fig_pie_mal = px.pie(
+                mal_proto_counts, 
+                values="Count", 
+                names="Protocol", 
+                color_discrete_sequence=px.colors.sequential.RdBu,
+                title="Protocols Used in Malicious Attacks"
+            )
+            st.plotly_chart(fig_pie_mal, use_container_width=True)
+        else:
+            st.info("No malicious traffic to analyze.")
+
+    # FEATURE 3: DRILL-DOWN CAPABILITY
+    st.markdown("### Drill-Down Data Inspector")
+    st.markdown("Filter the data to view specific log entries.")
+    
+    # Dynamic Filters
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        selected_label = st.multiselect("Filter by Prediction", ["Benign", "Malicious"], default=["Malicious"])
+    with f2:
+        # Get unique protocols from decoded data
+        unique_protos = analysis_df["proto"].unique().tolist()
+        selected_proto = st.multiselect("Filter by Protocol", unique_protos, default=unique_protos)
+    with f3:
+        # Filter by connection state if available
+        unique_states = analysis_df["conn_state"].unique().tolist()
+        selected_state = st.multiselect("Filter by Conn State", unique_states, default=unique_states)
+
+    # Apply Filters
+    filtered_df = analysis_df[
+        (analysis_df["Predicted Label"].isin(selected_label)) & 
+        (analysis_df["proto"].isin(selected_proto)) &
+        (analysis_df["conn_state"].isin(selected_state))
+    ]
+
+    st.write(f"Showing **{len(filtered_df)}** flows matching criteria:")
+    
+    # Display interactive dataframe
+    st.dataframe(
+        filtered_df.sort_values(by="timestamp", ascending=False), 
+        use_container_width=True
+    )
+
+# TAB 6 — UPLOAD & PREDICT
 
 with tab_upload:
     st.subheader("Upload CSV to Test the Models")
