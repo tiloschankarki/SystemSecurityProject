@@ -15,6 +15,7 @@ import os
 # Load Data
 
 X_test = pd.read_csv("data/processed/X_test_scenario.csv")
+X_test = X_test.drop(columns=["ts"], errors="ignore")
 y_test = pd.read_csv("data/processed/y_test_scenario.csv")["label"]
 
 # Load models
