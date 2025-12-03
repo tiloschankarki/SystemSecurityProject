@@ -425,7 +425,7 @@ with tab_upload:
     st.markdown(
         """
         The uploaded CSV should have **the same columns as the original flow-level dataset**  
-        (before encoding/scaling): `proto`, `duration`, `orig_bytes`, `resp_bytes`, `conn_state`, `missed_bytes`, `history`, `orig_pkts`, `orig_ip_bytes`, `resp_pkts`, `resp_ip_bytes`, etc.
+        (before encoding/scaling): `ts`, `proto`, `duration`, `orig_bytes`, `resp_bytes`, `conn_state`, `missed_bytes`, `history`, `orig_pkts`, `orig_ip_bytes`, `resp_pkts`, `resp_ip_bytes`, etc.
 
         For this project, the safest way is to:
         - take a subset of the raw scenarios,

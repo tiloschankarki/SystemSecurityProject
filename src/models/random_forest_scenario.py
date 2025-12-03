@@ -15,6 +15,10 @@ from sklearn.model_selection import GridSearchCV
 
 X_train = pd.read_csv("data/processed/X_train_scenario.csv")
 X_test  = pd.read_csv("data/processed/X_test_scenario.csv")
+
+X_train = X_train.drop(columns=["ts"], errors="ignore")
+X_test = X_test.drop(columns=["ts"], errors="ignore")
+
 y_train = pd.read_csv("data/processed/y_train_scenario.csv")["label"]
 y_test  = pd.read_csv("data/processed/y_test_scenario.csv")["label"]
 
